@@ -32,7 +32,7 @@ app.get('/',(req,res) => {
 
 
 // Create -> post()
-app.post("/api/create", (req,res)=> {
+app.post("/api/create", verifyIdToken , (req,res)=> {
     (async () => {
         try{
             await db.collection('userDetails').doc(`/${Date.now()}/`).create({
@@ -96,7 +96,7 @@ app.get('/api/getAll' , (req , res) => {
     })();
 })
 // Update => put()
-app.put("/api/update/:id", (req,res)=> {
+app.put("/api/update/:id", verifyIdToken , (req,res)=> {
     (async () => {
         try{
             const reqDoc = db.collection('userDetails').doc(req.params.id);
@@ -113,7 +113,7 @@ app.put("/api/update/:id", (req,res)=> {
     })();
 });
 // Delete => delete()
-app.delete("/api/delete/:id", (req,res)=> {
+app.delete("/api/delete/:id", verifyIdToken , (req,res)=> {
     (async () => {
         try{
             const reqDoc = db.collection('userDetails').doc(req.params.id);
@@ -126,7 +126,23 @@ app.delete("/api/delete/:id", (req,res)=> {
         };
     })();
 });
-
+// for auth
+async function verifyIdToken(req, res, next) {
+    const idToken = req.headers.authorization && req.headers.authorization.split(' ')[1];
+  
+    if (!idToken) {
+      return res.status(401).send('Unauthorized: No token provided');
+    }
+  
+    try {
+      // verigy ID Token
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      req.user = decodedToken;  // success
+      next();  // 進入 API router
+    } catch (error) {
+      return res.status(401).send('Unauthorized: Invalid token');
+    }
+  }
 
 //exports the api to firebase cloud functions
 exports.app = onRequest(app);
